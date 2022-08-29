@@ -15,7 +15,7 @@ import (
 	"runtime"
 	"sync/atomic"
 	"encoding/json"
-
+	
 	"dashboardapis/api/responses"
 
 	// "github.com/elastic/go-elasticsearch/v8"
@@ -280,12 +280,15 @@ func (server *Server) postQueryResult(w http.ResponseWriter, r *http.Request) {
 
 	if data == nil && err != nil {
 		responses.ERROR(w, http.StatusNotImplemented, err)
+		standardLogger.ErrorMessage(err, "")
 		return
 	} else if err != nil {
 		StatusCode, errs := strconv.Atoi(data[0])
 		if errs != nil {
-			standardLogger.ErrorMessage(errs, "Error while comverting to int from string")
+			standardLogger.ErrorMessage(errs, "Error while converting to int from string")
+			return
 		}
+		standardLogger.ErrorMessage(err, "")
 		responses.ERROR(w, StatusCode, err)
 		return
 	}

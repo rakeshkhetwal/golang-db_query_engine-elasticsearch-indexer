@@ -9,6 +9,7 @@ import (
 
 	"dashboardapis/api/responses"
 	"dashboardapis/api/error_handler"
+	"github.com/rakeshkhetwal/sqltojson"
 )
 
 // Allowed operation for query to execute
@@ -68,68 +69,39 @@ func (server *Server) getQueryResult(w http.ResponseWriter, r *http.Request) {
 	//param validation for none value
 	param_validation:=paramsNullHandler(dbDriver, dbName, query)
 	if param_validation == false {
-		// var nilerr error
 		standardLogger.ErrorMessage(nilerr,"Incomplete parameters passed")
 		param_validation_error := error_handler.ParamsNullHandler()
 		responses.ERROR(w, http.StatusBadRequest, param_validation_error)
-	}else{
-		// Getting query validation response
-		validated_query, err:= queryValidator(query)
-		if err != nil || validated_query == false {
-			// for unauthorized query
-			if validated_query == false && err == nil {
-				standardLogger.ErrorMessage(nilerr,"Unauthorized operation, please use select operation only")
-				unauthorised_error := error_handler.UnauthorizedHandler()
-				responses.ERROR(w, http.StatusUnauthorized, unauthorised_error)
-			} else {
-				//syntax error response
-				standardLogger.ErrorMessage(err,"")
-				responses.ERROR(w, http.StatusBadRequest, err)
-			}
-		} else {
-			//db initialize
-			db, err := Initialize(dbDriver, dbName)
-			rows, err := db.Query(query)
-			if err != nil {
-				standardLogger.ErrorMessage(err,"")
-				responses.ERROR(w, http.StatusBadRequest, err)
-			}else {
-				defer rows.Close()
-				columns, err := rows.Columns()
-				if err != nil {
-					standardLogger.ErrorMessage(err,"")
-				}
-				count := len(columns)
-				// creating query data map
-				queryData := make([]map[string]interface{}, 0)
-				values := make([]interface{}, count)
-				valuePtrs := make([]interface{}, count)
-				for rows.Next() {
-					for i := 0; i < count; i++ {
-						valuePtrs[i] = &values[i]
-					}
-					rows.Scan(valuePtrs...)
-					entry := make(map[string]interface{})
-					for i, col := range columns {
-						var v interface{}
-						val := values[i]
-						//conversion in bytes of values
-						b, ok := val.([]byte)
-						
-						if ok {
-							v = string(b)
-							
-						} else {
-							// for nil data
-							v = val
-						}
-						entry[col] = v
-					}
-					queryData = append(queryData, entry)
-				}
-				responses.JSON(w, http.StatusOK, queryData)
-			}
-		}
+		return
 	}
-	
+
+	validated_query, err:= queryValidator(query)
+	if err != nil || validated_query == false {
+		// for unauthorized query
+		if validated_query == false && err == nil {
+			standardLogger.ErrorMessage(nilerr,"Unauthorized operation, please use select operation only")
+			unauthorised_error := error_handler.UnauthorizedHandler()
+			responses.ERROR(w, http.StatusUnauthorized, unauthorised_error)
+			return
+		} else {
+			//syntax error response
+			standardLogger.ErrorMessage(err,"")
+			responses.ERROR(w, http.StatusBadRequest, err)
+			return
+		}
+		return
+	}
+
+	//db initialize
+	db, err := Initialize(dbDriver, dbName)
+	//sql to json conversion
+	err,queryData:=sqltojson.SqlToJson(db,query)
+
+	if err != nil {
+		standardLogger.ErrorMessage(err,"")
+		responses.ERROR(w, http.StatusBadRequest, err)
+		return
+	}
+
+	responses.JSON(w, http.StatusOK, queryData)
 }
