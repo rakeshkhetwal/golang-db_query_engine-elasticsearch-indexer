@@ -3,8 +3,8 @@ package controllers
 import (
 	"fmt"
 	"net/http"
-    "database/sql"
-    "os"
+   	"database/sql"
+   	"os"
 	"errors"
 
 	"github.com/joho/godotenv"
@@ -66,8 +66,8 @@ func Initialize(dbDriver, dbName string) (*sql.DB, error) {
 }
 
 func Run() {
-    // Router  initialize
-    server.Router = mux.NewRouter()
+    	// Router  initialize
+    	server.Router = mux.NewRouter()
 	server.initializeRoutes()
 	// Server Listen
 	server.RunServer(":8084")
