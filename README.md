@@ -16,7 +16,7 @@ Uses a number of open source projects to work properly:
 
 - Golang 
 - Elastic Search
-- [sqltojson] module
+- [sqltojson] package
 - postgresql/mysql
 
 ## Installation
